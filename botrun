@@ -326,6 +326,7 @@ cmd_run() {
     "--name" "$CONTAINER_NAME"
     "--label" "botrun=true"
     "-e" "TERM=${TERM:-xterm-256color}"
+    "-e" "COLORTERM=${COLORTERM:-truecolor}"
     "-v" "$PWD:$PWD"
     "-w" "$PWD"
   )
