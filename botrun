@@ -4,6 +4,9 @@ set -euo pipefail
 CONFIG_FILE=""
 CONTAINER_NAME=""
 CLEANUP_IN_PROGRESS=false
+CLEANUP_DIRS=""
+
+trap 'for d in $CLEANUP_DIRS; do rm -rf "$d"; done' EXIT
 
 agent_install_cmd() {
   case "$1" in
@@ -48,6 +51,15 @@ die() {
 
 warn() {
   echo "Warning: $1" >&2
+}
+
+expand_tilde() {
+  local path=$1 home=${2:-$HOME}
+  case "$path" in
+    "~"/*) echo "${home}/${path#\~/}" ;;
+    "~")   echo "$home" ;;
+    *)     echo "$path" ;;
+  esac
 }
 
 check_docker() {
@@ -117,10 +129,10 @@ parse_config() {
 
 generate_dockerfile() {
   local tmpdir="$1"
-  local agent_install
-  agent_install=$(agent_install_cmd "$AGENT")
-  local agent_binary
-  agent_binary=$(agent_binary "$AGENT")
+  local install_cmd
+  install_cmd=$(agent_install_cmd "$AGENT")
+  local binary_name
+  binary_name=$(agent_binary "$AGENT")
 
   local all_packages=("curl" "git")
   if [[ "$DOCKER_ENABLED" == "true" ]]; then
@@ -133,64 +145,55 @@ generate_dockerfile() {
   fi
   local packages_str="${all_packages[*]}"
 
-  cat > "$tmpdir/Dockerfile" <<DOCKERFILE
-FROM ubuntu:24.04
-
-ENV DEBIAN_FRONTEND=noninteractive
-
-RUN apt-get update && \\
-    apt-get install -y $packages_str && \\
-    apt-get clean && \\
-    rm -rf /var/lib/apt/lists/*
-DOCKERFILE
+  local df=""
+  df+='FROM ubuntu:24.04'$'\n'
+  df+=$'\n'
+  df+='ENV DEBIAN_FRONTEND=noninteractive'$'\n'
+  df+=$'\n'
+  df+="RUN apt-get update && \\"$'\n'
+  df+="    apt-get install -y ${packages_str} && \\"$'\n'
+  df+='    apt-get clean && \'$'\n'
+  df+='    rm -rf /var/lib/apt/lists/*'$'\n'
 
   if [[ "$DOCKER_ENABLED" == "true" ]]; then
-    cat >> "$tmpdir/Dockerfile" <<'DOCKERFILE'
-
-RUN install -m 0755 -d /etc/apt/keyrings && \
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc && \
-    chmod a+r /etc/apt/keyrings/docker.asc && \
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" > /etc/apt/sources.list.d/docker.list && \
-    apt-get update && \
-    apt-get install -y docker-ce-cli && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
-DOCKERFILE
+    df+=$'\n'
+    df+='RUN install -m 0755 -d /etc/apt/keyrings && \'$'\n'
+    df+='    curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc && \'$'\n'
+    df+='    chmod a+r /etc/apt/keyrings/docker.asc && \'$'\n'
+    df+='    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" > /etc/apt/sources.list.d/docker.list && \'$'\n'
+    df+='    apt-get update && \'$'\n'
+    df+='    apt-get install -y docker-ce-cli && \'$'\n'
+    df+='    apt-get clean && \'$'\n'
+    df+='    rm -rf /var/lib/apt/lists/*'$'\n'
   fi
 
   if [[ ${#MISE_TOOLS[@]} -gt 0 ]]; then
-    cat >> "$tmpdir/Dockerfile" <<'DOCKERFILE'
-
-ENV PATH="/root/.local/share/mise/shims:/root/.local/bin:${PATH}"
-
-RUN curl https://mise.run | sh
-DOCKERFILE
+    df+=$'\n'
+    df+='ENV PATH="/root/.local/share/mise/shims:/root/.local/bin:${PATH}"'$'\n'
+    df+=$'\n'
+    df+='RUN curl https://mise.run | sh'$'\n'
 
     local mise_cmds=""
     for tool in "${MISE_TOOLS[@]}"; do
-      mise_cmds+="mise use --global $tool && "
+      mise_cmds+="mise use --global ${tool} && "
     done
     mise_cmds+="mise reshim"
 
-    cat >> "$tmpdir/Dockerfile" <<DOCKERFILE
-
-RUN $mise_cmds
-DOCKERFILE
+    df+=$'\n'
+    df+="RUN ${mise_cmds}"$'\n'
   fi
 
   if [[ "$AGENT" == "claude" ]]; then
-    cat >> "$tmpdir/Dockerfile" <<'DOCKERFILE'
-
-ENV PATH="/root/.local/bin:${PATH}"
-DOCKERFILE
+    df+=$'\n'
+    df+='ENV PATH="/root/.local/bin:${PATH}"'$'\n'
   fi
 
-  cat >> "$tmpdir/Dockerfile" <<DOCKERFILE
+  df+=$'\n'
+  df+="RUN ${install_cmd}"$'\n'
+  df+=$'\n'
+  df+="ENTRYPOINT [\"/bin/bash\", \"-c\", \"${binary_name}\"]"$'\n'
 
-RUN $agent_install
-
-ENTRYPOINT ["/bin/bash", "-c", "${agent_binary}"]
-DOCKERFILE
+  printf '%s' "$df" > "$tmpdir/Dockerfile"
 }
 
 cmd_build() {
@@ -199,7 +202,7 @@ cmd_build() {
 
   local tmpdir
   tmpdir=$(mktemp -d)
-  trap "rm -rf '$tmpdir'" EXIT
+  CLEANUP_DIRS="$CLEANUP_DIRS $tmpdir"
 
   echo "Generating Dockerfile for agent '$AGENT'..."
   generate_dockerfile "$tmpdir"
@@ -220,7 +223,7 @@ cmd_init() {
     [[ -z "$target" ]] && target=".botrun.yaml"
   fi
 
-  target="${target/#\~/$HOME}"
+  target=$(expand_tilde "$target")
 
   if [[ -e "$target" ]]; then
     die "Config file already exists: $target"
@@ -334,8 +337,8 @@ cmd_run() {
       host_path="${vol%%:*}"
       container_path="${vol#*:}"
 
-      host_path="${host_path/#\~/$HOME}"
-      container_path="${container_path/#\~//root}"
+      host_path=$(expand_tilde "$host_path")
+      container_path=$(expand_tilde "$container_path" "/root")
 
       if [[ "$host_path" == "/var/run/docker.sock" ]]; then
         socket_mounted=true
