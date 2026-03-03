@@ -105,28 +105,6 @@ Requirements should be ordered by dependency — an implementing agent should be
 
 - Test data setup requirements
 
-## Implementation Plan
-
-Break the work into ordered steps that respect context window limits:
-
-```markdown
-## Implementation Steps
-
-Each step should be completable in a single focused session.
-
-### Step 1: [Title]
-- What to do
-- **Files:** path/to/file1.ts, path/to/file2.ts *(include when paths are known)*
-- **Done when:** [Machine-verifiable criteria, e.g., "file exists, exports `createUser`, unit tests pass"]
-
-### Step 2: [Title]
-- What to do
-- Depends on Step 1 being complete
-- **Done when:** [e.g., "`POST /api/users` returns 201 with valid payload, 400 on missing fields"]
-```
-
-Include file lists per step when working in an existing codebase where paths are known. For greenfield projects or when the structure is still taking shape, omit them — the ordering, scope, and done-when criteria are what matter most.
-
 ## Open Questions
 - Any remaining uncertainties
 - Decisions deferred to implementation time
