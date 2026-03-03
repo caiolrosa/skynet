@@ -171,8 +171,7 @@ Re-read the generated spec and check for the following issues:
 2. **Missing behavior** — every REQ must have a `Behavior:` block
 3. **Broken dependency ordering** — no REQ should `Depend On` a later REQ
 4. **Stub sections** — remove any section that's just "N/A" or a single sentence
-5. **Implementation steps** — every step must have `Done when:` with machine-verifiable criteria, and file lists when paths are known (skip file lists for greenfield)
-6. **Missing or weak Agent Boundaries** — if the feature touches existing code, shared services, or has security implications, include an Agent Boundaries section with concrete Always/Ask first/Never items
+5. **Missing or weak Agent Boundaries** — if the feature touches existing code, shared services, or has security implications, include an Agent Boundaries section with concrete Always/Ask first/Never items
 
 After fixing all issues, show the user a brief summary of what was caught and corrected. For example:
 

@@ -149,41 +149,6 @@ CREATE INDEX idx_reset_tokens_user ON password_reset_tokens(user_id);
 | Used token cannot be reused | REQ-002, edge case | Integration |
 | Full flow: request → email → reset → login with new password | REQ-001, REQ-002 | E2E |
 
-## 11. Implementation Plan
-
-### Step 1: Database migration
-- Create `password_reset_tokens` table
-- **Files:** `src/db/migrations/004_password_reset_tokens.sql`
-- **Done when:** Migration runs successfully, table exists with correct schema, indexes present
-
-### Step 2: Token service
-- Implement token generation, hashing, storage, and verification
-- **Files:** `src/services/password-reset.ts`
-- **Done when:** Unit tests pass for: generate token, hash token, store token, verify valid token, reject expired token, reject missing token
-
-### Step 3: API endpoints
-- Add forgot-password and reset-password routes
-- **Files:** `src/routes/auth.ts`, `src/routes/index.ts`
-- **Done when:** `POST /api/forgot-password` returns 200 for known and unknown emails; `POST /api/reset-password` returns 200 for valid token, 400 for invalid
-- Depends on Step 2
-
-### Step 4: Email template
-- Create password reset email with tokenized link
-- **Files:** `src/emails/password-reset.tsx`
-- **Done when:** Email renders correctly with reset URL containing token parameter
-- Depends on Step 2
-
-### Step 5: Frontend pages
-- Create ForgotPassword and ResetPassword pages with forms
-- **Files:** `src/pages/ForgotPassword.tsx`, `src/pages/ResetPassword.tsx`
-- **Done when:** Forms submit to correct endpoints, display success/error states, validate input client-side
-- Depends on Step 3
-
-### Step 6: E2E test
-- Full flow from request to login with new password
-- **Files:** `tests/password-reset.test.ts`
-- **Done when:** E2E test passes: request reset → verify email sent → submit new password → login succeeds with new password
-
-## 12. Open Questions
+## 11. Open Questions
 
 - None — all questions resolved during spec creation.

@@ -37,7 +37,7 @@ Specs use numbered requirements (`REQ-001`, `REQ-002`, ...), each containing:
 - Edge cases and validation rules
 - Code examples and dependencies
 
-Other sections (architecture, data model, error handling, testing strategy, implementation plan) are included only when relevant.
+Other sections (architecture, data model, error handling, testing strategy) are included only when relevant.
 
 ## Design goals
 
