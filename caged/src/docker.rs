@@ -51,12 +51,7 @@ impl DockerOrchestrator {
             String::new()
         };
 
-        let mut packages_vec = config.packages.clone();
-        if config.docker {
-            packages_vec.push("docker.io".to_string());
-        }
-        let packages = packages_vec.join(" ");
-
+        let packages = config.packages.join(" ");
         let mise_commands = if !config.mise.is_empty() {
             config
                 .mise
@@ -79,13 +74,13 @@ impl DockerOrchestrator {
             base_image = BASE_IMAGE,
             user_name = USER_NAME,
             user_home = Self::get_container_home(),
-            packages = packages,
             group_id = group_id,
             user_id = user_id,
-            docker_group_setup = docker_group_setup,
+            project_dir = project_dir,
+            packages = packages,
             mise_commands = mise_commands,
             agent_install_cmd = agent_install_cmd,
-            project_dir = project_dir,
+            docker_group_setup = docker_group_setup,
         );
 
         Ok(dockerfile)
