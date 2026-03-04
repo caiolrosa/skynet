@@ -25,75 +25,6 @@ impl DockerOrchestrator {
         Ok(orchestrator)
     }
 
-    fn get_project_hash(&self) -> String {
-        let mut hasher = Sha256::new();
-        hasher.update(self.project_dir.to_string_lossy().as_bytes());
-
-        let hash = hasher.finalize();
-        hex::encode(hash)[..12].to_string()
-    }
-
-    fn get_image_tag(&self) -> String {
-        format!("{}-{}", Self::IMAGE_TAG_PREFIX, self.get_project_hash())
-    }
-
-    fn generate_dockerfile(&self, config: &Config) -> Result<String> {
-        let user_id = nix::unistd::getuid().as_raw();
-        let group_id = nix::unistd::getgid().as_raw();
-
-        let docker_group_setup = if config.docker {
-            let gid = self.get_docker_socket_gid()?;
-            format!(
-                "RUN groupadd -g {gid} docker_host || true && usermod -aG {gid} {user_name} || true",
-                gid = gid,
-                user_name = Self::USER_NAME
-            )
-        } else {
-            String::default()
-        };
-
-        let docker_apt_setup = if config.docker {
-            self.get_docker_configuration()
-        } else {
-            "true".to_string()
-        };
-
-        let packages = self.build_package_list(config).join(" ");
-        let mise_commands = if !config.mise.is_empty() {
-            config
-                .mise
-                .iter()
-                .map(|tool| format!("mise use -g {}", tool))
-                .collect::<Vec<String>>()
-                .join(" && ")
-        } else {
-            "true".to_string()
-        };
-
-        let agent_install_cmd = match config.agent {
-            Agent::Claude => "curl -fsSL https://claude.ai/install.sh | bash",
-            Agent::Gemini => "npm install -g @google/gemini-cli",
-        };
-
-        let project_dir = self.project_dir.to_string_lossy();
-        let dockerfile = format!(
-            include_str!("dockerfile.template"),
-            base_image = Self::BASE_IMAGE,
-            user_name = Self::USER_NAME,
-            user_home = self.get_container_home(),
-            group_id = group_id,
-            user_id = user_id,
-            project_dir = project_dir,
-            packages = packages,
-            docker_apt_setup = docker_apt_setup,
-            mise_commands = mise_commands,
-            agent_install_cmd = agent_install_cmd,
-            docker_group_setup = docker_group_setup,
-        );
-
-        Ok(dockerfile)
-    }
-
     pub fn build_image(&self, config: &Config) -> Result<()> {
         let dockerfile_content = self.generate_dockerfile(config)?;
         let tag = self.get_image_tag();
@@ -178,6 +109,73 @@ impl DockerOrchestrator {
         }
 
         Ok(())
+    }
+
+    pub fn image_exists(&self) -> Result<bool> {
+        let tag = self.get_image_tag();
+        let output = Command::new("docker")
+            .args(["images", "-q", &tag])
+            .output()
+            .context("Failed to check if docker image exists")?;
+
+        Ok(!output.stdout.is_empty())
+    }
+
+    fn generate_dockerfile(&self, config: &Config) -> Result<String> {
+        let user_id = nix::unistd::getuid().as_raw();
+        let group_id = nix::unistd::getgid().as_raw();
+
+        let docker_group_setup = if config.docker {
+            let gid = self.get_docker_socket_gid()?;
+            format!(
+                "RUN groupadd -g {gid} docker_host || true && usermod -aG {gid} {user_name} || true",
+                gid = gid,
+                user_name = Self::USER_NAME
+            )
+        } else {
+            String::default()
+        };
+
+        let docker_apt_setup = if config.docker {
+            self.get_docker_configuration()
+        } else {
+            "true".to_string()
+        };
+
+        let packages = self.build_package_list(config).join(" ");
+        let mise_commands = if !config.mise.is_empty() {
+            config
+                .mise
+                .iter()
+                .map(|tool| format!("mise use -g {}", tool))
+                .collect::<Vec<String>>()
+                .join(" && ")
+        } else {
+            "true".to_string()
+        };
+
+        let agent_install_cmd = match config.agent {
+            Agent::Claude => "curl -fsSL https://claude.ai/install.sh | bash",
+            Agent::Gemini => "npm install -g @google/gemini-cli",
+        };
+
+        let project_dir = self.project_dir.to_string_lossy();
+        let dockerfile = format!(
+            include_str!("dockerfile.template"),
+            base_image = Self::BASE_IMAGE,
+            user_name = Self::USER_NAME,
+            user_home = self.get_container_home(),
+            group_id = group_id,
+            user_id = user_id,
+            project_dir = project_dir,
+            packages = packages,
+            docker_apt_setup = docker_apt_setup,
+            mise_commands = mise_commands,
+            agent_install_cmd = agent_install_cmd,
+            docker_group_setup = docker_group_setup,
+        );
+
+        Ok(dockerfile)
     }
 
     fn execute_container(
@@ -278,6 +276,18 @@ impl DockerOrchestrator {
         packages.extend(config.packages.clone());
 
         packages
+    }
+
+    fn get_project_hash(&self) -> String {
+        let mut hasher = Sha256::new();
+        hasher.update(self.project_dir.to_string_lossy().as_bytes());
+
+        let hash = hasher.finalize();
+        hex::encode(hash)[..12].to_string()
+    }
+
+    fn get_image_tag(&self) -> String {
+        format!("{}-{}", Self::IMAGE_TAG_PREFIX, self.get_project_hash())
     }
 
     fn get_docker_socket_gid(&self) -> Result<u32> {

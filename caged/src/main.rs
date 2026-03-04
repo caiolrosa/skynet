@@ -17,18 +17,24 @@ fn main() -> Result<()> {
 
     match cli.command {
         Commands::Run => {
-            orchestrator.build_image(&config)?;
+            if !orchestrator.image_exists()? {
+                orchestrator.build_image(&config)?;
+            }
+
             orchestrator.run_agent(&config)?;
         }
         Commands::Shell => {
-            orchestrator.build_image(&config)?;
+            if !orchestrator.image_exists()? {
+                orchestrator.build_image(&config)?;
+            }
             orchestrator.shell(&config)?;
         }
         Commands::Cleanup => {
-            orchestrator.build_image(&config)?;
             orchestrator.cleanup()?;
         }
-        Commands::Build => {}
+        Commands::Build => {
+            orchestrator.build_image(&config)?;
+        }
     }
 
     Ok(())
