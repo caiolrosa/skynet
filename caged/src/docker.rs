@@ -7,25 +7,25 @@ use std::os::unix::fs::MetadataExt;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
-const DOCKER_SOCKET: &str = "/var/run/docker.sock";
-const BASE_IMAGE: &str = "ubuntu:22.04";
-const IMAGE_TAG_PREFIX: &str = "caged-agent";
-const USER_NAME: &str = "agent";
-
 pub struct DockerOrchestrator {
     project_dir: PathBuf,
 }
 
 impl DockerOrchestrator {
+    const DOCKER_SOCKET: &'static str = "/var/run/docker.sock";
+    const BASE_IMAGE: &'static str = "ubuntu:22.04";
+    const IMAGE_TAG_PREFIX: &'static str = "caged-agent";
+    const USER_NAME: &'static str = "agent";
+
     pub fn new() -> Result<Self> {
-        Self::check_docker()?;
-
         let project_dir = env::current_dir().context("Failed to get current working directory")?;
+        let orchestrator = Self { project_dir };
+        orchestrator.check_docker()?;
 
-        Ok(Self { project_dir })
+        Ok(orchestrator)
     }
 
-    pub fn get_project_hash(&self) -> String {
+    fn get_project_hash(&self) -> String {
         let mut hasher = Sha256::new();
         hasher.update(self.project_dir.to_string_lossy().as_bytes());
 
@@ -33,31 +33,38 @@ impl DockerOrchestrator {
         hex::encode(hash)[..12].to_string()
     }
 
-    pub fn get_image_tag(&self) -> String {
-        format!("{}-{}", IMAGE_TAG_PREFIX, self.get_project_hash())
+    fn get_image_tag(&self) -> String {
+        format!("{}-{}", Self::IMAGE_TAG_PREFIX, self.get_project_hash())
     }
 
-    pub fn generate_dockerfile(&self, config: &Config) -> Result<String> {
+    fn generate_dockerfile(&self, config: &Config) -> Result<String> {
         let user_id = nix::unistd::getuid().as_raw();
         let group_id = nix::unistd::getgid().as_raw();
 
         let docker_group_setup = if config.docker {
             let gid = self.get_docker_socket_gid()?;
             format!(
-                "RUN groupadd -g {} docker_host || true && usermod -aG {} {} || true",
-                gid, gid, USER_NAME
+                "RUN groupadd -g {gid} docker_host || true && usermod -aG {gid} {user_name} || true",
+                gid = gid,
+                user_name = Self::USER_NAME
             )
         } else {
-            String::new()
+            String::default()
         };
 
-        let packages = config.packages.join(" ");
+        let docker_apt_setup = if config.docker {
+            self.get_docker_configuration()
+        } else {
+            "true".to_string()
+        };
+
+        let packages = self.build_package_list(config).join(" ");
         let mise_commands = if !config.mise.is_empty() {
             config
                 .mise
                 .iter()
                 .map(|tool| format!("mise use -g {}", tool))
-                .collect::<Vec<_>>()
+                .collect::<Vec<String>>()
                 .join(" && ")
         } else {
             "true".to_string()
@@ -71,13 +78,14 @@ impl DockerOrchestrator {
         let project_dir = self.project_dir.to_string_lossy();
         let dockerfile = format!(
             include_str!("dockerfile.template"),
-            base_image = BASE_IMAGE,
-            user_name = USER_NAME,
-            user_home = Self::get_container_home(),
+            base_image = Self::BASE_IMAGE,
+            user_name = Self::USER_NAME,
+            user_home = self.get_container_home(),
             group_id = group_id,
             user_id = user_id,
             project_dir = project_dir,
             packages = packages,
+            docker_apt_setup = docker_apt_setup,
             mise_commands = mise_commands,
             agent_install_cmd = agent_install_cmd,
             docker_group_setup = docker_group_setup,
@@ -215,7 +223,7 @@ impl DockerOrchestrator {
             let gid = self.get_docker_socket_gid()?;
             println!("Warning: Mounting Docker socket. This has security implications.");
             args.push("-v".to_string());
-            args.push(format!("{}:{}", DOCKER_SOCKET, DOCKER_SOCKET));
+            args.push(format!("{}:{}", Self::DOCKER_SOCKET, Self::DOCKER_SOCKET));
             args.push("--group-add".to_string());
             args.push(gid.to_string());
         }
@@ -232,7 +240,7 @@ impl DockerOrchestrator {
                         return path.replace("~", &user_home.to_string_lossy());
                     }
 
-                    path.replace("~", &Self::get_container_home())
+                    path.replace("~", &self.get_container_home())
                 })
                 .collect::<Vec<String>>()
                 .join(":");
@@ -243,22 +251,51 @@ impl DockerOrchestrator {
         Ok(args)
     }
 
+    fn get_docker_configuration(&self) -> String {
+        let docker_setup_cmds = [
+            "install -m 0755 -d /etc/apt/keyrings",
+            "curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc",
+            "chmod a+r /etc/apt/keyrings/docker.asc",
+            "echo \"deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo \"$VERSION_CODENAME\") stable\" | tee /etc/apt/sources.list.d/docker.list > /dev/null",
+            "apt-get update -y && apt-get install -y docker-ce-cli docker-compose-plugin",
+        ];
+
+        docker_setup_cmds.join(" && \\\n  ")
+    }
+
+    fn get_default_packages(&self) -> Vec<String> {
+        vec![
+            "curl".to_string(),
+            "ca-certificates".to_string(),
+            "git".to_string(),
+            "zstd".to_string(),
+        ]
+    }
+
+    fn build_package_list(&self, config: &Config) -> Vec<String> {
+        let mut packages = self.get_default_packages();
+
+        packages.extend(config.packages.clone());
+
+        packages
+    }
+
     fn get_docker_socket_gid(&self) -> Result<u32> {
-        if !Path::new(DOCKER_SOCKET).exists() {
+        if !Path::new(Self::DOCKER_SOCKET).exists() {
             return Err(anyhow!(
                 "Docker socket not found at {}. Ensure Docker is running.",
-                DOCKER_SOCKET
+                Self::DOCKER_SOCKET
             ));
         }
 
-        Ok(Path::new(DOCKER_SOCKET).metadata()?.gid())
+        Ok(Path::new(Self::DOCKER_SOCKET).metadata()?.gid())
     }
 
-    fn get_container_home() -> String {
-        format!("/home/{}", USER_NAME)
+    fn get_container_home(&self) -> String {
+        format!("/home/{}", Self::USER_NAME)
     }
 
-    fn check_docker() -> Result<()> {
+    fn check_docker(&self) -> Result<()> {
         let status = Command::new("docker")
             .arg("version")
             .stdout(Stdio::null())

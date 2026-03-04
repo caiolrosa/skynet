@@ -12,7 +12,9 @@ ENV NPM_CONFIG_PREFIX={user_home}/.local
 ENV TERM=xterm-256color
 ENV COLORTERM=truecolor
 
-RUN apt update && apt install -y curl git ca-certificates {packages} && \
+RUN apt-get update && apt-get upgrade -y && \
+  apt-get install -y {packages} && \
+  {docker_apt_setup} && \
   rm -rf /var/lib/apt/lists/*
 
 USER {user_name}
