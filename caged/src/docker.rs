@@ -205,26 +205,17 @@ impl DockerOrchestrator {
 
     fn get_common_run_args(&self, config: &Config) -> Result<Vec<String>> {
         let project_path = self.project_dir.to_string_lossy().to_string();
-        let mut args = vec![
-            "--rm".to_string(),
-            "--security-opt".to_string(),
-            "no-new-privileges:true".to_string(),
-            "--cap-drop".to_string(),
-            "ALL".to_string(),
+        let mut args = vec!["--rm".to_string()];
+
+        args.extend(self.get_security_args(config)?);
+        args.extend(self.get_docker_socket_args(config)?);
+
+        args.extend([
             "-v".to_string(),
             format!("{}:{}:rw", project_path, project_path),
             "-w".to_string(),
             project_path,
-        ];
-
-        if config.docker {
-            let gid = self.get_docker_socket_gid()?;
-            println!("Warning: Mounting Docker socket. This has security implications.");
-            args.push("-v".to_string());
-            args.push(format!("{}:{}", Self::DOCKER_SOCKET, Self::DOCKER_SOCKET));
-            args.push("--group-add".to_string());
-            args.push(gid.to_string());
-        }
+        ]);
 
         for vol in &config.volumes {
             args.push("-v".to_string());
@@ -247,6 +238,38 @@ impl DockerOrchestrator {
         }
 
         Ok(args)
+    }
+
+    fn get_security_args(&self, config: &Config) -> Result<Vec<String>> {
+        // On mac docker socket is gid 0, which requires us to skip hardening flags
+        let skip_hardening = config.docker && self.get_docker_socket_gid()? == 0;
+
+        if skip_hardening {
+            return Ok(Vec::new());
+        }
+
+        Ok(vec![
+            "--security-opt".to_string(),
+            "no-new-privileges:true".to_string(),
+            "--cap-drop".to_string(),
+            "ALL".to_string(),
+        ])
+    }
+
+    fn get_docker_socket_args(&self, config: &Config) -> Result<Vec<String>> {
+        if !config.docker {
+            return Ok(Vec::new());
+        }
+
+        let gid = self.get_docker_socket_gid()?;
+        println!("Warning: Mounting Docker socket. This has security implications.");
+
+        Ok(vec![
+            "-v".to_string(),
+            format!("{}:{}", Self::DOCKER_SOCKET, Self::DOCKER_SOCKET),
+            "--group-add".to_string(),
+            gid.to_string(),
+        ])
     }
 
     fn get_docker_configuration(&self) -> String {
@@ -296,6 +319,10 @@ impl DockerOrchestrator {
                 "Docker socket not found at {}. Ensure Docker is running.",
                 Self::DOCKER_SOCKET
             ));
+        }
+
+        if cfg!(target_os = "macos") {
+            return Ok(0);
         }
 
         Ok(Path::new(Self::DOCKER_SOCKET).metadata()?.gid())
