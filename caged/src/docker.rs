@@ -1,7 +1,7 @@
 use crate::config::{Agent, Config};
 use anyhow::{Context, Result, anyhow};
 use sha2::{Digest, Sha256};
-use std::env;
+use std::env::{self, home_dir};
 use std::io::Write;
 use std::os::unix::fs::MetadataExt;
 use std::path::{Path, PathBuf};
@@ -10,6 +10,7 @@ use std::process::{Command, Stdio};
 const DOCKER_SOCKET: &str = "/var/run/docker.sock";
 const BASE_IMAGE: &str = "ubuntu:22.04";
 const IMAGE_TAG_PREFIX: &str = "caged-agent";
+const USER_NAME: &str = "agent";
 
 pub struct DockerOrchestrator {
     project_dir: PathBuf,
@@ -43,8 +44,8 @@ impl DockerOrchestrator {
         let docker_group_setup = if config.docker {
             let gid = self.get_docker_socket_gid()?;
             format!(
-                "RUN groupadd -g {} docker_host || true && usermod -aG {} user || true",
-                gid, gid
+                "RUN groupadd -g {} docker_host || true && usermod -aG {} {} || true",
+                gid, gid, USER_NAME
             )
         } else {
             String::new()
@@ -76,13 +77,15 @@ impl DockerOrchestrator {
         let dockerfile = format!(
             include_str!("dockerfile.template"),
             base_image = BASE_IMAGE,
+            user_name = USER_NAME,
+            user_home = Self::get_container_home(),
             packages = packages,
             group_id = group_id,
             user_id = user_id,
             docker_group_setup = docker_group_setup,
             mise_commands = mise_commands,
             agent_install_cmd = agent_install_cmd,
-            project_dir = project_dir
+            project_dir = project_dir,
         );
 
         Ok(dockerfile)
@@ -224,7 +227,22 @@ impl DockerOrchestrator {
 
         for vol in &config.volumes {
             args.push("-v".to_string());
-            args.push(vol.clone());
+
+            let expanded_volume: String = vol
+                .split(':')
+                .enumerate()
+                .map(|(index, path)| {
+                    if index == 0 {
+                        let user_home = home_dir().expect("Failed to get user home directory");
+                        return path.replace("~", &user_home.to_string_lossy());
+                    }
+
+                    path.replace("~", &Self::get_container_home())
+                })
+                .collect::<Vec<String>>()
+                .join(":");
+
+            args.push(expanded_volume);
         }
 
         Ok(args)
@@ -239,6 +257,10 @@ impl DockerOrchestrator {
         }
 
         Ok(Path::new(DOCKER_SOCKET).metadata()?.gid())
+    }
+
+    fn get_container_home() -> String {
+        format!("/home/{}", USER_NAME)
     }
 
     fn check_docker() -> Result<()> {

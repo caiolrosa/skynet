@@ -1,22 +1,24 @@
 FROM {base_image}
 
-RUN groupadd -g {group_id} user || true && \
-    useradd -u {user_id} -g {group_id} -m user
+RUN groupadd -g {group_id} {user_name} || true && \
+    useradd -u {user_id} -g {group_id} -m {user_name}
 
 {docker_group_setup}
 
 ENV DEBIAN_FRONTEND=noninteractive
-ENV PATH="/home/user/.local/share/mise/bin:/home/user/.local/share/mise/shims:$PATH"
-ENV PATH="/home/user/.local/bin:$PATH"
-ENV NPM_CONFIG_PREFIX=/home/user/.local
+ENV PATH="{user_home}/.local/share/mise/bin:{user_home}/.local/share/mise/shims:$PATH"
+ENV PATH="{user_home}/.local/bin:$PATH"
+ENV NPM_CONFIG_PREFIX={user_home}/.local
 ENV TERM=xterm-256color
 ENV COLORTERM=truecolor
 
 RUN apt update && apt install -y curl git ca-certificates {packages} && \
-    rm -rf /var/lib/apt/lists/*
+  rm -rf /var/lib/apt/lists/*
 
-USER user
+USER {user_name}
 
-RUN curl https://mise.run | sh && {mise_commands} && {agent_install_cmd}
+RUN curl https://mise.run | sh && \
+  {mise_commands} && \
+  {agent_install_cmd}
 
 WORKDIR {project_dir}
