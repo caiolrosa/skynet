@@ -13,7 +13,7 @@ fn main() -> Result<()> {
 
     let config_path = Config::find_config(cli.file)?;
     let config = Config::load(&config_path)?;
-    let orchestrator = DockerOrchestrator::new()?;
+    let orchestrator = DockerOrchestrator::new(config_path)?;
 
     match cli.command {
         Commands::Run => {
