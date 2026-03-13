@@ -2,6 +2,7 @@ use crate::config::{Agent, Config};
 use anyhow::{Context, Result, anyhow};
 use sha2::{Digest, Sha256};
 use std::env::{self, home_dir};
+use std::fs;
 use std::io::Write;
 use std::os::unix::fs::MetadataExt;
 use std::path::{Path, PathBuf};
@@ -9,6 +10,7 @@ use std::process::{Command, Stdio};
 
 pub struct DockerOrchestrator {
     project_dir: PathBuf,
+    config_path: PathBuf,
 }
 
 impl DockerOrchestrator {
@@ -17,9 +19,12 @@ impl DockerOrchestrator {
     const IMAGE_TAG_PREFIX: &'static str = "caged-agent";
     const USER_NAME: &'static str = "agent";
 
-    pub fn new() -> Result<Self> {
+    pub fn new(config_path: PathBuf) -> Result<Self> {
         let project_dir = env::current_dir().context("Failed to get current working directory")?;
-        let orchestrator = Self { project_dir };
+        let orchestrator = Self {
+            project_dir,
+            config_path,
+        };
         orchestrator.check_docker()?;
 
         Ok(orchestrator)
@@ -301,16 +306,17 @@ impl DockerOrchestrator {
         packages
     }
 
-    fn get_project_hash(&self) -> String {
+    fn get_config_hash(&self) -> String {
         let mut hasher = Sha256::new();
-        hasher.update(self.project_dir.to_string_lossy().as_bytes());
+        let canonical_path = fs::canonicalize(&self.config_path).unwrap_or(self.config_path.clone());
+        hasher.update(canonical_path.to_string_lossy().as_bytes());
 
         let hash = hasher.finalize();
         hex::encode(hash)[..12].to_string()
     }
 
     fn get_image_tag(&self) -> String {
-        format!("{}-{}", Self::IMAGE_TAG_PREFIX, self.get_project_hash())
+        format!("{}-{}", Self::IMAGE_TAG_PREFIX, self.get_config_hash())
     }
 
     fn get_docker_socket_gid(&self) -> Result<u32> {
