@@ -4,10 +4,6 @@ This is a condensed example showing the expected format and tone. A real spec wo
 
 ---
 
-> **TL;DR:** Adds a password reset flow via email with token-based verification. 5 requirements, touches 8 files (3 new, 5 modified). Constrained to existing Express + Postgres stack with Resend for email.
->
-> **Done when:** E2E test completes full reset flow (request → email → new password → login), all endpoints return expected status codes, migration is reversible, no existing tests broken.
-
 ## 1. Overview
 
 Users currently have no way to recover access if they forget their password. This spec adds a password reset flow: user requests a reset link via email, receives a tokenized link, and sets a new password through a dedicated form.
@@ -44,20 +40,7 @@ Users currently have no way to recover access if they forget their password. Thi
 
 ## 6. Architecture & Approach
 
-Token-based reset via email. The reset token is generated server-side, hashed, and stored in a new `password_reset_tokens` table. The plaintext token is sent via email as a URL parameter. On submission, the server verifies the hash, checks expiry, and updates the password.
-
-**File manifest:**
-
-| File | Action | Purpose |
-|------|--------|---------|
-| `src/db/migrations/004_password_reset_tokens.sql` | Create | New table for reset tokens |
-| `src/routes/auth.ts` | Modify | Add POST `/forgot-password` and POST `/reset-password` |
-| `src/services/password-reset.ts` | Create | Token generation, hashing, verification logic |
-| `src/emails/password-reset.tsx` | Create | Email template for reset link |
-| `src/pages/ForgotPassword.tsx` | Create | Request reset form |
-| `src/pages/ResetPassword.tsx` | Create | New password form |
-| `src/routes/index.ts` | Modify | Register new routes |
-| `tests/password-reset.test.ts` | Create | Unit + integration tests |
+The reset token is generated server-side, hashed, and stored in a new `password_reset_tokens` table. The plaintext token is sent via email as a URL parameter. On submission, the server verifies the hash, checks expiry, and updates the password.
 
 ## 7. Detailed Requirements
 
@@ -114,41 +97,6 @@ const tokenHash = createHash('sha256').update(token).digest('hex'); // stored in
 
 **Depends On:** REQ-001
 
-## 8. Data Model / Schema Changes
-
-```sql
-CREATE TABLE password_reset_tokens (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  token_hash VARCHAR(64) NOT NULL,
-  expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
-CREATE INDEX idx_reset_tokens_hash ON password_reset_tokens(token_hash);
-CREATE INDEX idx_reset_tokens_user ON password_reset_tokens(user_id);
-```
-
-## 9. Error Handling Strategy
-
-| Error | User sees | Logged | Retry |
-|-------|-----------|--------|-------|
-| Email delivery failure | Generic success message | Yes (error level) | No |
-| Database error on token creation | 500 "Something went wrong" | Yes (error level) | No |
-| Invalid/expired token | 400 "Invalid or expired reset link" | Yes (warn level) | User can request new link |
-| Password hash failure | 500 "Something went wrong" | Yes (error level) | No |
-
-## 10. Testing Strategy
-
-| Test Case | Covers | Type |
-|-----------|--------|------|
-| Valid email triggers token creation and email send | REQ-001 | Integration |
-| Unknown email returns 200 (no enumeration) | REQ-001, edge case | Unit |
-| Valid token resets password | REQ-002 | Integration |
-| Expired token returns 400 | REQ-002, edge case | Unit |
-| Used token cannot be reused | REQ-002, edge case | Integration |
-| Full flow: request → email → reset → login with new password | REQ-001, REQ-002 | E2E |
-
-## 11. Open Questions
+## 8. Open Questions
 
 - None — all questions resolved during spec creation.

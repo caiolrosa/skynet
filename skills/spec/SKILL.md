@@ -73,18 +73,12 @@ Now analyze the user's description alongside your codebase findings and identify
 - What are the inputs, outputs, and transformations?
 - What are the exact business rules or logic conditions?
 
-**C. Data & State**
-- What data structures are involved?
-- Where does state live (database, memory, URL, local storage)?
-- What are the data validation rules?
-- Are there migration concerns?
-
-**D. Environment & Constraints**
+**C. Environment & Constraints**
 - Are there performance requirements (response time, payload size)?
 - Are there accessibility requirements?
 - What browsers/platforms must be supported?
 
-**E. Security**
+**D. Security**
 - What are the authentication and authorization requirements?
 - What inputs come from untrusted sources and need validation?
 - Are there abuse prevention requirements (e.g., rate limiting, replay protection)?
@@ -93,11 +87,11 @@ Now analyze the user's description alongside your codebase findings and identify
 - Are there data privacy or compliance requirements (GDPR, HIPAA, etc.)?
 - What should be logged vs. redacted in logs?
 
-**F. Dependencies & Integration**
+**E. Dependencies & Integration**
 - What APIs, services, or modules does this depend on?
 - What existing code should be reused vs written fresh?
 
-**G. General / Uncategorized**
+**F. General / Uncategorized**
 - Anything that doesn't fit the categories above but is relevant to building a complete understanding
 - User preferences, conventions, past decisions, or tribal knowledge that could affect implementation
 - Anything the agent notices is missing, feels off, or would benefit from the user's direct input
@@ -157,7 +151,7 @@ Use whatever path the user confirms. Do NOT proceed until you have a confirmed p
 
 Only after all previous phases are complete, load the spec template from [template.md](template.md) and generate the spec. Refer to [example.md](example.md) for the expected tone, format, and level of detail.
 
-**Important:** Only include sections that are relevant to this specific feature. Omit sections entirely if they don't apply (e.g. skip "UI/UX Specification" for backend-only work, skip "API Contracts" if no APIs are involved). Do NOT write "N/A" stubs — just leave the section out.
+**Important:** Only include sections that are relevant to this specific feature. Omit sections entirely if they don't apply. Do NOT write "N/A" stubs — just leave the section out.
 
 Do NOT save yet — proceed to Phase 7.
 
@@ -175,7 +169,7 @@ Re-read the generated spec and check for the following issues:
 
 After fixing all issues, show the user a brief summary of what was caught and corrected. For example:
 
-*"Validation pass complete. I fixed 3 issues before saving: replaced 2 weasel words ('should' → precise language) and removed 1 stub section (Testing Strategy had no content). Everything else checked out."*
+*"Validation pass complete. I fixed 2 issues before saving: replaced 2 weasel words ('should' → precise language). Everything else checked out."*
 
 If no issues were found, say so: *"Validation pass complete — no issues found."*
 
