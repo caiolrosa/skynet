@@ -17,7 +17,7 @@ impl DockerOrchestrator {
     const DOCKER_SOCKET: &'static str = "/var/run/docker.sock";
     const BASE_IMAGE: &'static str = "ubuntu:26.04";
     const IMAGE_TAG_PREFIX: &'static str = "caged-agent";
-    const USER_NAME: &'static str = "agent";
+    const USER_NAME: &'static str = "ubuntu";
 
     pub fn new(config_path: PathBuf) -> Result<Self> {
         let project_dir = env::current_dir().context("Failed to get current working directory")?;
@@ -132,6 +132,19 @@ impl DockerOrchestrator {
         let user_id = nix::unistd::getuid().as_raw();
         let group_id = nix::unistd::getgid().as_raw();
 
+        let user_setup = if user_id == 1000 && group_id == 1000 {
+            "# Use existing ubuntu user (1000:1000)".to_string()
+        } else {
+            format!(
+                "RUN groupadd -g {group_id} {user_name} || true && \\
+    useradd -u {user_id} -g {group_id} -m -d {user_home} {user_name}",
+                group_id = group_id,
+                user_id = user_id,
+                user_name = Self::USER_NAME,
+                user_home = self.get_container_home()
+            )
+        };
+
         let docker_group_setup = if config.docker {
             let gid = self.get_docker_socket_gid()?;
             format!(
@@ -172,8 +185,7 @@ impl DockerOrchestrator {
             base_image = Self::BASE_IMAGE,
             user_name = Self::USER_NAME,
             user_home = self.get_container_home(),
-            group_id = group_id,
-            user_id = user_id,
+            user_setup = user_setup,
             project_dir = project_dir,
             packages = packages,
             docker_apt_setup = docker_apt_setup,
