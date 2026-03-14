@@ -19,7 +19,11 @@ pub enum Commands {
     Run,
 
     /// Starts an interactive bash shell session within the container
-    Shell,
+    Shell {
+        /// Optional command and arguments to execute within the container
+        #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
+        command: Vec<String>,
+    },
 
     /// Forces a rebuild of the project-specific agent image
     Build,
