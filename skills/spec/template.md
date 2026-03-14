@@ -4,10 +4,6 @@ Use this template when generating the spec in Phase 6. Only include sections tha
 
 ---
 
-> **TL;DR:** [2-4 sentences summarizing what this spec covers, how many requirements it has, roughly how many files are affected, and any notable constraints. This lets an implementing agent quickly decide which sections to load.]
->
-> **Done when:** [Machine-verifiable criteria that define when the entire spec is complete — not per-step, but the overall finish line. E.g., "E2E test passes full flow, all endpoints return expected status codes, migration is reversible, no existing tests broken."]
-
 ## Overview
 - One paragraph: what this is and why it exists
 - **Related documents (optional):** Link to related PRDs, sibling specs, or prior art. Include when this feature depends on, extends, or was split from other work.
@@ -33,13 +29,10 @@ Guard rails for the implementing agent. Omit this section only if the feature ha
 
 - **Always:** [Actions the agent must do without asking — e.g., "Run existing tests after each step", "Use existing auth middleware for new endpoints", "Follow existing naming conventions"]
 - **Ask first:** [Actions that require human review before proceeding — e.g., "Adding new dependencies", "Changing database schema beyond what's specified", "Modifying shared utilities used by other features"]
-- **Never:** [Hard stops — e.g., "Delete existing data or tables not mentioned in this spec", "Modify files outside the file manifest without explicit approval", "Skip error handling for any endpoint"]
+- **Never:** [Hard stops — e.g., "Delete existing data or tables not mentioned in this spec", "Modify files outside the specified requirements without explicit approval", "Skip error handling for any endpoint"]
 
 ## Architecture & Approach
-- High-level approach (which files, modules, patterns)
-- Sequence diagram or data flow (ASCII art) if helpful
 - Key architectural decisions and WHY they were made
-- **File manifest:** List ALL files that will be created or modified so an implementing agent can plan its work up front
 
 ## Detailed Requirements
 
@@ -70,40 +63,6 @@ For each unit of work, provide:
 ```
 
 Requirements should be ordered by dependency — an implementing agent should be able to work through them top to bottom.
-
-## Data Model / Schema Changes
-- Exact field names, types, defaults, and constraints
-- Migration steps if modifying existing data
-- Sample data for testing
-
-## API Contracts
-- Endpoint, method, request/response shapes
-- Status codes and error responses
-- Authentication requirements
-
-## UI/UX Specification
-- Component hierarchy
-- State management approach
-- User interaction flow (step by step)
-- Loading, empty, and error states
-- Accessibility requirements
-
-## Error Handling Strategy
-- For each error category: what to show the user, what to log, whether to retry
-- Fallback behaviors
-- Graceful degradation approach
-
-## Testing Strategy
-- What to test (unit, integration, e2e)
-- Key test cases mapped to requirements:
-
-| Test Case | Covers | Type |
-|-----------|--------|------|
-| [Description of test] | REQ-001 | Unit |
-| [Description of test] | REQ-001, edge case #1 | Integration |
-| [Description of test] | REQ-002 | E2E |
-
-- Test data setup requirements
 
 ## Open Questions
 - Any remaining uncertainties
