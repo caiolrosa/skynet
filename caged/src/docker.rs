@@ -15,7 +15,7 @@ pub struct DockerOrchestrator {
 
 impl DockerOrchestrator {
     const DOCKER_SOCKET: &'static str = "/var/run/docker.sock";
-    const BASE_IMAGE: &'static str = "ubuntu:22.04";
+    const BASE_IMAGE: &'static str = "ubuntu:26.04";
     const IMAGE_TAG_PREFIX: &'static str = "caged-agent";
     const USER_NAME: &'static str = "agent";
 
@@ -310,7 +310,8 @@ impl DockerOrchestrator {
 
     fn get_config_hash(&self) -> String {
         let mut hasher = Sha256::new();
-        let canonical_path = fs::canonicalize(&self.config_path).unwrap_or(self.config_path.clone());
+        let canonical_path =
+            fs::canonicalize(&self.config_path).unwrap_or(self.config_path.clone());
         hasher.update(canonical_path.to_string_lossy().as_bytes());
 
         let hash = hasher.finalize();
