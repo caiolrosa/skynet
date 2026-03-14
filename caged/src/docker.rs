@@ -69,12 +69,14 @@ impl DockerOrchestrator {
         self.execute_container(config, vec![agent_cmd.to_string()], "run agent container")
     }
 
-    pub fn shell(&self, config: &Config) -> Result<()> {
-        self.execute_container(
-            config,
-            vec!["/bin/bash".to_string()],
-            "start shell container",
-        )
+    pub fn shell(&self, config: &Config, command: Vec<String>) -> Result<()> {
+        let cmd = if command.is_empty() {
+            vec!["/bin/bash".to_string()]
+        } else {
+            command
+        };
+
+        self.execute_container(config, cmd, "start shell container")
     }
 
     pub fn cleanup(&self) -> Result<()> {

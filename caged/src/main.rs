@@ -23,11 +23,11 @@ fn main() -> Result<()> {
 
             orchestrator.run_agent(&config)?;
         }
-        Commands::Shell => {
+        Commands::Shell { command } => {
             if !orchestrator.image_exists()? {
                 orchestrator.build_image(&config)?;
             }
-            orchestrator.shell(&config)?;
+            orchestrator.shell(&config, command)?;
         }
         Commands::Cleanup => {
             orchestrator.cleanup()?;
