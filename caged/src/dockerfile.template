@@ -1,7 +1,6 @@
 FROM {base_image}
 
-RUN groupadd -g {group_id} {user_name} || true && \
-    useradd -u {user_id} -g {group_id} -m {user_name}
+{user_setup}
 
 {docker_group_setup}
 
