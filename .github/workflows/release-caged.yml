@@ -3,7 +3,7 @@ name: Release Caged
 on:
   push:
     tags:
-      - 'caged-v*'
+      - "caged-v*"
 
 jobs:
   verify:
@@ -45,3 +45,4 @@ jobs:
           files: dist/*
           draft: true
           name: Caged ${{ github.ref_name }}
+          token: ${{ secrets.RELEASER_TOKEN }}

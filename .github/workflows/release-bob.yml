@@ -3,7 +3,7 @@ name: Release Bob
 on:
   push:
     tags:
-      - 'bob-v*'
+      - "bob-v*"
 
 jobs:
   verify:
@@ -45,3 +45,4 @@ jobs:
           files: dist/*
           draft: true
           name: Bob ${{ github.ref_name }}
+          token: ${{ secrets.RELEASER_TOKEN }}
