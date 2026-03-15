@@ -1,0 +1,47 @@
+name: Release Caged
+
+on:
+  push:
+    tags:
+      - 'caged-v*'
+
+jobs:
+  verify:
+    uses: ./.github/workflows/verify.yml
+    with:
+      force_project: caged
+
+  build-and-publish:
+    name: Build and Publish
+    needs: verify
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build Release Binary
+        working-directory: caged
+        run: cargo build --release
+
+      - name: Prepare Assets
+        run: |
+          mkdir -p dist
+          if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
+            cp caged/target/release/caged dist/caged-linux-amd64
+          elif [ "${{ matrix.os }}" = "macos-latest" ]; then
+            cp caged/target/release/caged dist/caged-macos
+          fi
+
+      - name: Publish Release (Draft)
+        uses: softprops/action-gh-release@v1
+        with:
+          files: dist/*
+          draft: true
+          name: Caged ${{ github.ref_name }}

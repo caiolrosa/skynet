@@ -1,0 +1,73 @@
+name: Verify
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_call:
+    inputs:
+      force_project:
+        required: false
+        type: string
+        description: "Force verification for a specific project (bob, caged, or all)"
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      bob: ${{ steps.filter.outputs.bob }}
+      caged: ${{ steps.filter.outputs.caged }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            bob:
+              - 'bob/**'
+              - '.github/workflows/**'
+            caged:
+              - 'caged/**'
+              - '.github/workflows/**'
+
+  verify-bob:
+    needs: changes
+    if: ${{ needs.changes.outputs.bob == 'true' || inputs.force_project == 'bob' || inputs.force_project == 'all' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Lint
+        working-directory: bob
+        run: make lint
+
+      - name: Test
+        working-directory: bob
+        run: make test
+
+  verify-caged:
+    needs: changes
+    if: ${{ needs.changes.outputs.caged == 'true' || inputs.force_project == 'caged' || inputs.force_project == 'all' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Lint
+        working-directory: caged
+        run: make lint
+
+      - name: Test
+        working-directory: caged
+        run: make test
