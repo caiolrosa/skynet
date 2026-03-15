@@ -1,0 +1,47 @@
+name: Release Bob
+
+on:
+  push:
+    tags:
+      - 'bob-v*'
+
+jobs:
+  verify:
+    uses: ./.github/workflows/verify.yml
+    with:
+      force_project: bob
+
+  build-and-publish:
+    name: Build and Publish
+    needs: verify
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build Release Binary
+        working-directory: bob
+        run: cargo build --release
+
+      - name: Prepare Assets
+        run: |
+          mkdir -p dist
+          if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
+            cp bob/target/release/bob dist/bob-linux-amd64
+          elif [ "${{ matrix.os }}" = "macos-latest" ]; then
+            cp bob/target/release/bob dist/bob-macos
+          fi
+
+      - name: Publish Release (Draft)
+        uses: softprops/action-gh-release@v1
+        with:
+          files: dist/*
+          draft: true
+          name: Bob ${{ github.ref_name }}
