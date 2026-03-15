@@ -18,9 +18,9 @@ impl<R: DockerCommandRunner> DockerOrchestrator<R> {
 
     pub fn new(config_path: PathBuf, runner: R) -> Result<Self> {
         let project_dir = env::current_dir().context("Failed to get current working directory")?;
-        
+
         runner.check_version()?;
-        
+
         let orchestrator = Self {
             project_dir,
             config_path,
@@ -93,11 +93,7 @@ impl<R: DockerCommandRunner> DockerOrchestrator<R> {
         self.runner.images_exists(&tag)
     }
 
-    fn execute_container(
-        &self,
-        config: &Config,
-        container_args: Vec<String>,
-    ) -> Result<()> {
+    fn execute_container(&self, config: &Config, container_args: Vec<String>) -> Result<()> {
         let tag = self.get_image_tag();
         let mut args = vec!["run".to_string(), "-it".to_string()];
         args.extend(self.get_common_run_args(config)?);
@@ -170,7 +166,11 @@ impl<R: DockerCommandRunner> DockerOrchestrator<R> {
 
         Ok(vec![
             "-v".to_string(),
-            format!("{}:{}", dockerfile::DOCKER_SOCKET, dockerfile::DOCKER_SOCKET),
+            format!(
+                "{}:{}",
+                dockerfile::DOCKER_SOCKET,
+                dockerfile::DOCKER_SOCKET
+            ),
             "--group-add".to_string(),
             gid.to_string(),
         ])

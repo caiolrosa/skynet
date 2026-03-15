@@ -1,16 +1,16 @@
 use anyhow::Result;
-use clap::Parser;
 use caged::cli::{Cli, Commands};
 use caged::config::Config;
 use caged::docker::DockerOrchestrator;
 use caged::docker_runner::DockerRunner;
+use clap::Parser;
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
 
     let config_path = Config::find_config(cli.file)?;
     let config = Config::load(&config_path)?;
-    
+
     let runner = DockerRunner::new();
     let orchestrator = DockerOrchestrator::new(config_path, runner)?;
 
