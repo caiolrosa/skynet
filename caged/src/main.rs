@@ -1,19 +1,18 @@
-mod cli;
-mod config;
-mod docker;
-
 use anyhow::Result;
 use clap::Parser;
-use cli::{Cli, Commands};
-use config::Config;
-use docker::DockerOrchestrator;
+use caged::cli::{Cli, Commands};
+use caged::config::Config;
+use caged::docker::DockerOrchestrator;
+use caged::docker_runner::DockerRunner;
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
 
     let config_path = Config::find_config(cli.file)?;
     let config = Config::load(&config_path)?;
-    let orchestrator = DockerOrchestrator::new(config_path)?;
+    
+    let runner = DockerRunner::new();
+    let orchestrator = DockerOrchestrator::new(config_path, runner)?;
 
     match cli.command {
         Commands::Run => {

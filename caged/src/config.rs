@@ -61,3 +61,37 @@ impl Config {
         Ok(path)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_valid_config_parsing() {
+        let yaml = "
+agent: gemini
+packages:
+  - htop
+mise:
+  - python@3.11
+volumes:
+  - /tmp:/tmp
+docker: true
+";
+        let config: Config = serde_yaml::from_str(yaml).unwrap();
+        assert!(matches!(config.agent, Agent::Gemini));
+        assert_eq!(config.packages, vec!["htop"]);
+        assert_eq!(config.mise, vec!["python@3.11"]);
+        assert_eq!(config.volumes, vec!["/tmp:/tmp"]);
+        assert!(config.docker);
+    }
+
+    #[test]
+    fn test_invalid_agent() {
+        let yaml = "
+agent: unknown
+";
+        let result = serde_yaml::from_str::<Config>(yaml);
+        assert!(result.is_err());
+    }
+}
