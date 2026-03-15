@@ -11,3 +11,7 @@ anyhow = "1.0"
 sha2 = "0.10"
 hex = "0.4"
 nix = { version = "0.31.2", features = ["user"] }
+
+[dev-dependencies]
+mockall = "0.14.0"
+tempfile = "3.27.0"
