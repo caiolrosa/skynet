@@ -3,7 +3,7 @@ use anyhow::{Result, anyhow};
 use std::os::unix::fs::MetadataExt;
 use std::path::Path;
 
-pub const USER_NAME: &str = "ubuntu";
+pub const USER_NAME: &str = "agent";
 pub const BASE_IMAGE: &str = "ubuntu:26.04";
 pub const DOCKER_SOCKET: &str = "/var/run/docker.sock";
 
@@ -16,18 +16,7 @@ pub fn generate_dockerfile(config: &Config, project_dir: &Path) -> Result<String
     let group_id = nix::unistd::getgid().as_raw();
 
     let user_home = get_container_home();
-    let user_setup = if user_id == 1000 && group_id == 1000 {
-        "# Use existing ubuntu user (1000:1000)".to_string()
-    } else {
-        format!(
-            "RUN groupadd -g {group_id} {user_name} || true && \\
-    useradd -u {user_id} -g {group_id} -m -d {user_home} {user_name}",
-            group_id = group_id,
-            user_id = user_id,
-            user_name = USER_NAME,
-            user_home = user_home
-        )
-    };
+    let user_setup = get_user_setup(user_id, group_id, &user_home);
 
     let docker_group_setup = if config.docker {
         let gid = get_docker_socket_gid()?;
@@ -94,6 +83,25 @@ pub fn get_docker_socket_gid() -> Result<u32> {
     }
 
     Ok(Path::new(DOCKER_SOCKET).metadata()?.gid())
+}
+
+fn get_user_setup(user_id: u32, group_id: u32, user_home: &str) -> String {
+    if user_id == 1000 && group_id == 1000 {
+        format!(
+            "RUN groupmod -n {user_name} ubuntu && usermod -l {user_name} -m -d {user_home} ubuntu",
+            user_name = USER_NAME,
+            user_home = user_home
+        )
+    } else {
+        format!(
+            "RUN groupadd -g {group_id} {user_name} || true && \\
+    useradd -u {user_id} -g {group_id} -m -d {user_home} {user_name}",
+            group_id = group_id,
+            user_id = user_id,
+            user_name = USER_NAME,
+            user_home = user_home
+        )
+    }
 }
 
 fn get_docker_configuration() -> String {
