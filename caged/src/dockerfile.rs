@@ -4,7 +4,7 @@ use std::os::unix::fs::MetadataExt;
 use std::path::Path;
 
 pub const USER_NAME: &str = "agent";
-pub const BASE_IMAGE: &str = "ubuntu:26.04";
+pub const BASE_IMAGE: &str = "ubuntu:24.04";
 pub const DOCKER_SOCKET: &str = "/var/run/docker.sock";
 
 pub fn get_container_home() -> String {
@@ -149,7 +149,7 @@ mod tests {
 
         let dockerfile = generate_dockerfile(&config, project_dir).unwrap();
 
-        assert!(dockerfile.contains("FROM ubuntu:26.04"));
+        assert!(dockerfile.contains("FROM ubuntu:24.04"));
         assert!(dockerfile.contains("npm install -g @google/gemini-cli"));
         assert!(dockerfile.contains("apt-get install -y curl ca-certificates git zstd htop"));
         assert!(dockerfile.contains("mise use -g python@3.11"));
