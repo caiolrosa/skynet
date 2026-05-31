@@ -40,7 +40,7 @@ impl<R: DockerCommandRunner> DockerOrchestrator<R> {
     pub fn run_agent(&self, config: &Config) -> Result<()> {
         let agent_cmd = match config.agent {
             Agent::Claude => "claude",
-            Agent::Gemini => "gemini",
+            Agent::Antigravity => "agy",
         };
 
         self.execute_container(config, vec![agent_cmd.to_string()])
