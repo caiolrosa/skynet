@@ -7,14 +7,14 @@ use std::path::{Path, PathBuf};
 #[serde(rename_all = "lowercase")]
 pub enum Agent {
     Claude,
-    Gemini,
+    Antigravity,
 }
 
 impl std::fmt::Display for Agent {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Agent::Claude => write!(f, "claude"),
-            Agent::Gemini => write!(f, "gemini"),
+            Agent::Antigravity => write!(f, "antigravity"),
         }
     }
 }
@@ -43,7 +43,7 @@ impl Config {
 
         serde_yaml::from_str(&content).map_err(|e| {
             if e.to_string().contains("unknown variant") {
-                return anyhow!("Unsupported agent. Supported agents: claude, gemini.");
+                return anyhow!("Unsupported agent. Supported agents: claude, antigravity.");
             }
 
             anyhow!("Failed to parse configuration: {}", e)
@@ -69,7 +69,7 @@ mod tests {
     #[test]
     fn test_valid_config_parsing() {
         let yaml = "
-agent: gemini
+agent: antigravity
 packages:
   - htop
 mise:
@@ -79,7 +79,7 @@ volumes:
 docker: true
 ";
         let config: Config = serde_yaml::from_str(yaml).unwrap();
-        assert!(matches!(config.agent, Agent::Gemini));
+        assert!(matches!(config.agent, Agent::Antigravity));
         assert_eq!(config.packages, vec!["htop"]);
         assert_eq!(config.mise, vec!["python@3.11"]);
         assert_eq!(config.volumes, vec!["/tmp:/tmp"]);

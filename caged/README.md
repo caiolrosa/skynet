@@ -1,6 +1,6 @@
 # Caged
 
-`caged` is a CLI tool designed for isolated agent execution. It simplifies the process of building and running Docker containers for AI agents (Claude or Gemini) with project-specific configurations.
+`caged` is a CLI tool designed for isolated agent execution. It simplifies the process of building and running Docker containers for AI agents (Claude or Antigravity) with project-specific configurations.
 
 ## Features
 
@@ -22,7 +22,7 @@
 Create a `caged.yaml` file in your project root:
 
 ```yaml
-agent: gemini # or claude
+agent: antigravity # or claude
 packages: # Optional: install extra os packages
   - build-essential
   - curl

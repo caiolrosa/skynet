@@ -49,7 +49,7 @@ pub fn generate_dockerfile(config: &Config, project_dir: &Path) -> Result<String
 
     let agent_install_cmd = match config.agent {
         Agent::Claude => "curl -fsSL https://claude.ai/install.sh | bash",
-        Agent::Gemini => "npm install -g @google/gemini-cli",
+        Agent::Antigravity => "curl -fsSL https://antigravity.google/cli/install.sh | bash",
     };
 
     let project_dir_str = project_dir.to_string_lossy();
@@ -137,9 +137,9 @@ mod tests {
     use crate::config::Agent;
 
     #[test]
-    fn test_generate_dockerfile_gemini() {
+    fn test_generate_dockerfile_antigravity() {
         let config = Config {
-            agent: Agent::Gemini,
+            agent: Agent::Antigravity,
             packages: vec!["htop".to_string()],
             mise: vec!["python@3.11".to_string()],
             volumes: vec![],
@@ -150,7 +150,7 @@ mod tests {
         let dockerfile = generate_dockerfile(&config, project_dir).unwrap();
 
         assert!(dockerfile.contains("FROM ubuntu:24.04"));
-        assert!(dockerfile.contains("npm install -g @google/gemini-cli"));
+        assert!(dockerfile.contains("curl -fsSL https://antigravity.google/cli/install.sh | bash"));
         assert!(dockerfile.contains("apt-get install -y curl ca-certificates git zstd htop"));
         assert!(dockerfile.contains("mise use -g python@3.11"));
         assert!(dockerfile.contains("WORKDIR /my/project"));

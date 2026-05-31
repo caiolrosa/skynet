@@ -25,7 +25,7 @@ mock! {
 fn create_temp_config(dir: &TempDir) -> (PathBuf, Config) {
     let config_path = dir.path().join("caged.yaml");
     let yaml = "
-agent: gemini
+agent: antigravity
 packages:
   - curl
 docker: false
@@ -70,7 +70,7 @@ fn test_run_agent() {
     mock_runner
         .expect_run()
         .withf(|args: &[String]| {
-            args.contains(&"run".to_string()) && args.contains(&"gemini".to_string())
+            args.contains(&"run".to_string()) && args.contains(&"agy".to_string())
         })
         .times(1)
         .returning(|_| Ok(()));
