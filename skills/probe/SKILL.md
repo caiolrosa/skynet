@@ -168,7 +168,7 @@ Write it in chat. Short, plain language, no jargon:
 - **Still assuming** — the surviving `⚠️` ledger, including anything you decided on the user's behalf.
 - **Left open** — anything unresolved, stated as a question, not hidden.
 
-Then offer to save it. Propose `<slug>.md` in the current directory and confirm the path before writing. Do not write a file unless the user asks for one.
+Then offer to continue into [spec](../spec/SKILL.md), which turns what was settled into a document the team can agree on and slice into issues. Offer once. Do not start it yourself.
 
 ---
 
