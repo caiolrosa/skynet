@@ -4,8 +4,7 @@ Reusable skills for AI coding agents. Each subdirectory is a self-contained skil
 
 ## Available skills
 
-- **[spec](spec/)** — Generate technical specification documents.
-- **[impl](impl/)** — Load language-specific best practices before implementing code changes.
+- **[probe](probe/)** — Interview you about a plan or decision until every branch is settled.
 
 ## Installation
 
@@ -13,7 +12,6 @@ Copy the skills you want to the appropriate directory:
 
 ```sh
 cp -r skills/<skill> ~/.claude/skills/<skill>  # Claude Code
-cp -r skills/<skill> ~/.gemini/skills/<skill>  # Gemini CLI
 ```
 
 ## Structure
