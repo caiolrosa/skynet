@@ -142,7 +142,19 @@ Then:
 
 1. Apply the findings you agree with.
 2. Re-run the full suite and lint.
-3. **Reproduce the report in yours, verbatim**, with every finding marked ✅ fixed or ❌ dismissed and the reason. Demote its axis headings to `###` and change nothing else. The user reads the review, not your summary of it.
+3. **Report it under `cr`'s axis headings, demoted to `###`.** Keep `cr`'s `Reviewed …` and `Excluded: …` lines above them, as written — the excluded files are part of what the review didn't cover. All three axis headings appear, every time.
+
+Every finding lands in one of three buckets:
+
+- **It stands.** You didn't apply it, whatever the reason — you disagree, the issue overrode it, or you applied only part. Reproduce it verbatim, `cr`'s file and marking and claim, and add your reason. Where the issue overrode it, the quoted decision is that reason; where you applied part, what's left undone is. These are the only findings the user has to decide on, so nothing about them is shortened, reworded or moved off its own line.
+- **You applied it.** Counted, never listed. The diff already says what changed, and a roll-call of things you fixed is the noise that stops the user reading the part that matters.
+- **It needed no action.** The diff already satisfies it, so `cr` read the code wrong and there was nothing to agree or disagree with. Counted, never listed, so a misread doesn't pass for a clean bill.
+
+**Every axis gets its heading and at least one line.** Where nothing stands, that line is `Nothing stands.`; where the axis didn't run, it's `cr`'s reason. A clean axis and a skipped one must never look alike.
+
+**Open the section with one count across all three axes**, in place of `cr`'s: `2 stand · 7 applied · 1 already satisfied`. Drop any term that's zero. No total.
+
+**Drop `## Review` only when the count is empty and all three axes ran.** One already-satisfied finding keeps the section alive, and so does an axis that didn't run — a review missing a whole check is the one thing that must never read as clean.
 
 **The issue beats the review.** When a finding contradicts something under `Decisions that bind this`, dismiss it and quote the decision. `cr` reads the issue too, but a decision the team settled outranks a reviewer's read of it.
 
@@ -182,15 +194,17 @@ Everything else: decide it, do it, and put it in the report.
 - `<command>` — <result>
 
 ## Review
-### Standards
-- ✅ <finding> — <what changed>
-- ❌ <finding> — <why it stands>
-### Spec
-- ✅ <finding> — <what changed>
-### Correctness
-- ❌ <finding> — <why it stands>
+<cr's `Reviewed …` and `Excluded: …` lines, verbatim>
+<n> stand · <n> applied · <n> already satisfied <omit any term that's zero>
 
-<cr's count line>
+### Standards
+- <file> — <marking> — <claim, verbatim> — <why it stands>
+
+### Spec
+Nothing stands.
+
+### Correctness
+Did not run — <reason>
 
 ## Files changed
 - <path>
@@ -199,7 +213,7 @@ Already dirty before this run, untouched:
 - <path>
 ```
 
-Omit a section that has nothing in it. Say plainly when something failed — a report that reads clean over a red suite is worse than no report.
+Omit a `##` section that has nothing in it — but never an axis heading inside `## Review`. Say plainly when something failed — a report that reads clean over a red suite is worse than no report.
 
 Nothing is committed, so the last two sections are how the user finds the work.
 
