@@ -1,0 +1,93 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat <<'EOF'
+warden build -n <name> -c <template> [-m <mount>]...
+warden run <name> [command...]
+warden stop <name> [limactl args...]
+warden ls [limactl args...]
+warden rm <name> [limactl args...]
+EOF
+}
+
+cmd_build() {
+  local name="" template="" mount_args=()
+  local OPTIND=1
+
+  while getopts ":n:c:m:" opt; do
+    case "$opt" in
+      n) name="$OPTARG" ;;
+      c) template="$OPTARG" ;;
+      m) mount_args+=(--mount-only "$OPTARG") ;;
+      *)
+        usage >&2
+        exit 1
+        ;;
+    esac
+  done
+
+  shift $((OPTIND - 1))
+  if [[ $# -gt 0 || -z "$name" || -z "$template" ]]; then
+    usage >&2
+    exit 1
+  fi
+
+  # ${mount_args[@]+...}: bash < 4.4 treats an empty array as unset under set -u.
+  limactl create --name "$name" ${mount_args[@]+"${mount_args[@]}"} "$template"
+  limactl start "$name"
+}
+
+cmd_run() {
+  if [[ $# -eq 0 ]]; then
+    usage >&2
+    exit 1
+  fi
+
+  local name="$1"
+  shift
+
+  # No trailing -- when there's no guest command.
+  if [[ $# -gt 0 ]]; then
+    exec limactl shell --start "$name" -- "$@"
+  fi
+
+  exec limactl shell --start "$name"
+}
+
+cmd_stop() {
+  exec limactl stop ${1+"$@"}
+}
+
+cmd_ls() {
+  exec limactl ls ${1+"$@"}
+}
+
+cmd_rm() {
+  exec limactl delete ${1+"$@"}
+}
+
+main() {
+  if [[ $# -eq 0 ]]; then
+    usage >&2
+    exit 1
+  fi
+
+  local subcommand="$1"
+  shift
+
+  case "$subcommand" in
+    build) cmd_build ${1+"$@"} ;;
+    run) cmd_run ${1+"$@"} ;;
+    stop) cmd_stop ${1+"$@"} ;;
+    ls) cmd_ls ${1+"$@"} ;;
+    rm) cmd_rm ${1+"$@"} ;;
+    *)
+      usage >&2
+      exit 1
+      ;;
+  esac
+}
+
+# ${1+"$@"} instead of "$@": bash < 4.4 treats "$@" as unset under set -u.
+main ${1+"$@"}

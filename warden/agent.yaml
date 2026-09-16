@@ -1,0 +1,54 @@
+minimumLimaVersion: "2.0.0"
+
+base:
+  - template:docker
+
+vmType: "vz"
+mountType: "virtiofs"
+
+cpus: 4
+memory: "4GiB"
+disk: "60GiB"
+
+user:
+  name: agent
+
+provision:
+  - mode: system
+    script: |
+      set -eux
+      apt-get update && apt-get upgrade
+      apt-get install -y build-essential curl git
+
+  - mode: user
+    script: |
+      set -eux
+
+      if [ ! -x "$HOME/.local/bin/mise" ]; then
+        curl https://mise.run | sh
+        echo 'eval "$(~/.local/bin/mise activate bash)"' >> ~/.bashrc
+      fi
+
+      export PATH="~/.local/bin:$PATH"
+
+      mise use -g node@latest
+      mise use -g bun@latest
+      mise use -g ruby@3.4.8
+
+      if ! command -v claude >/dev/null 2>&1; then
+        curl -fsSL https://claude.ai/install.sh | bash
+      fi
+
+      if [ ! -d "$HOME/.claude/skills" ]; then
+        mkdir ~/.claude/skills
+      fi
+
+      find /Users/caio/Documents/skynet/skills -type d -mindepth 1 | while read -r dir; do
+        ln -s $dir ~/.claude/skills
+      done
+
+      if [ ! -d "$HOME/.claude/output-styles" ]; then
+        mkdir ~/.claude/output-styles
+      fi
+
+      ln -s /Users/caio/Documents/skynet/skills/readability.md ~/.claude/output-styles
