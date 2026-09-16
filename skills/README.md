@@ -6,6 +6,7 @@ Reusable skills for AI coding agents. Each subdirectory is a self-contained skil
 
 - **[probe](probe/)** — Interview you about a plan or decision until every branch is settled.
 - **[spec](spec/)** — Turn those settled decisions into one document a team can agree on, sliced into work items ready to become issues.
+- **[issues](issues/)** — Turn that document into one markdown file per unit of work, each standalone enough for an agent to implement on its own.
 
 ## Installation
 
