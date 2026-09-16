@@ -8,6 +8,7 @@ Reusable skills for AI coding agents. Each subdirectory is a self-contained skil
 - **[spec](spec/)** — Turn those settled decisions into one document a team can agree on, sliced into work items ready to become issues.
 - **[issues](issues/)** — Turn that document into one markdown file per unit of work, each standalone enough for an agent to implement on its own.
 - **[impl](impl/)** — Build the work in one issue file, one test at a time, then hand it to code review.
+- **[cr](cr/)** — Review the diff along three axes in parallel sub-agents, and report the findings without touching the code.
 
 ## Installation
 

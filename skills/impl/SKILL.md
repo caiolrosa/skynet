@@ -67,7 +67,7 @@ Rules that bind every slice:
 - **Red before green.** A test that passes the moment you write it proves nothing. Treat it as broken and fix the test before you write any code.
 - **One test at a time.** Never write all the tests up front. Tests written in bulk describe behaviour you imagined rather than behaviour you built, they stop reacting to what the last slice taught you, and they lock in a structure you chose before understanding the work.
 - **The minimum to pass.** No speculative options, no hooks for a future the issue didn't ask for.
-- **No cleanup.** Don't refactor, rename or deduplicate as you go. `cr` reviews the diff and that is where cleanup is decided.
+- **No cleanup.** Don't refactor or rename as you go. `cr` reviews the diff and that is where cleanup is decided. Duplication is the exception: leave the copies alone. `cr` won't ask you to extract them, and the wrong abstraction costs more than the copy.
 
 ### What to test
 
@@ -136,15 +136,15 @@ When the work is done and verified, hand it to `cr`.
 
 **Send it to a sub-agent and wait.** Pass the path to the issue file. `cr` works out its own diff — you don't build one or describe your changes. The sub-agent keeps the review's reading out of this context.
 
-**What comes back is a list of findings**, nothing else: the axis, the file, the claim, the suggested fix.
+**What comes back is a report**, nothing else: three axes — Standards, Spec, Correctness — each finding one or two lines carrying the file, the claim, the suggested fix, and a marking. Standards and Spec mark **hard** or **judgement**; Correctness marks **certain**, **likely** or **speculative**.
 
 Then:
 
 1. Apply the findings you agree with.
 2. Re-run the full suite and lint.
-3. Record every finding as **fixed** or **dismissed with the reason**.
+3. **Reproduce the report in yours, verbatim**, with every finding marked ✅ fixed or ❌ dismissed and the reason. Demote its axis headings to `###` and change nothing else. The user reads the review, not your summary of it.
 
-**The issue beats the review.** When a finding contradicts something under `Decisions that bind this`, dismiss it and quote the decision. The review didn't see the issue's reasoning; you did.
+**The issue beats the review.** When a finding contradicts something under `Decisions that bind this`, dismiss it and quote the decision. `cr` reads the issue too, but a decision the team settled outranks a reviewer's read of it.
 
 **If `cr` isn't installed, or the sub-agent comes back with nothing**, say the review didn't run and why. Don't review the diff yourself instead — a review by the agent that wrote the code is the thing `cr` exists to replace.
 
@@ -182,10 +182,15 @@ Everything else: decide it, do it, and put it in the report.
 - `<command>` — <result>
 
 ## Review
-Fixed:
-- <finding> — <what changed>
-Dismissed:
-- <finding> — <why>
+### Standards
+- ✅ <finding> — <what changed>
+- ❌ <finding> — <why it stands>
+### Spec
+- ✅ <finding> — <what changed>
+### Correctness
+- ❌ <finding> — <why it stands>
+
+<cr's count line>
 
 ## Files changed
 - <path>
