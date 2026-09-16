@@ -32,8 +32,9 @@ It stops and asks on four things: the repo contradicts a decision that binds the
 - **It asks only when blocked.** `probe`, `spec` and `issues` exist to settle decisions upstream. An implement step that re-asks scope, approach and error handling makes the whole chain pointless.
 - **No language context files.** The old version of this skill shipped six `langs/*.md` guides. The repo's own standards docs and the issue's `Conventions to follow` already carry it, and the guides drifted from what the repo actually did.
 - **It does not clean up its own diff.** Writing the minimum and letting `cr` judge it is the point. Reviewing your own work in the context that produced it misses exactly what a separate review catches.
-- **Code review runs in a sub-agent.** The review reads a lot; the findings are short. Only the findings come back.
-- **The issue beats the review.** A finding that contradicts `Decisions that bind this` is dismissed with the decision quoted. The reviewer never saw the reasoning.
+- **Code review runs in a sub-agent.** The review reads a lot; the report is short. Only the report comes back.
+- **The report is reproduced verbatim.** Findings appear as `cr` wrote them, each marked ✅ fixed or ❌ dismissed with the reason. The user reads the review rather than a summary of it.
+- **The issue beats the review.** A finding that contradicts `Decisions that bind this` is dismissed with the decision quoted. `cr` reads the issue too, but a settled decision outranks a reviewer's read of it.
 - **It commits nothing and stages nothing** — not even `git add -N`. The tree is left dirty and the report names the files, so the user reviews before anything lands.
 - **The issue file is read-only.** No ticked boxes, no appended log. Nothing on disk records that an issue was implemented, so a second run redoes it.
 - **Integration over unit.** Tests go through the real interface with the real code behind it. Unit tests are reserved for logic worth stressing on its own — complex parsing, non-trivial calculation, boundaries a caller can't reach from outside. Repo conventions come first where they exist. Same rule [issues](../issues/) uses when it names test cases.
