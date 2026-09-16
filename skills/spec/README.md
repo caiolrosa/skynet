@@ -2,7 +2,7 @@
 
 Turns decisions that are already settled into one document a team can agree on, sliced into work items ready to become issues.
 
-Sits between [probe](../probe/) and whatever files your tickets: probe settles the decisions, `spec` writes them up and breaks the work apart, you agree on it, then the issues get filed.
+Sits between [probe](../probe/) and [issues](../issues/): probe settles the decisions, `spec` writes them up and breaks the work apart, you agree on it, then `issues` turns each work item into a file an agent can implement on its own.
 
 ## Files
 
