@@ -1,111 +1,107 @@
 ---
 name: impl
-description: "Build the work in one issue file, one test at a time, then hand it to code review. Use after issues, when a briefing is ready to build. Triggers on: implement this issue, build this issue, work on issue 03, implement it, build this ticket."
+description: "Build the work in a briefing, one test at a time, then hand it to code review. Use after issues, or whenever a piece of work is decided and ready to build. Triggers on: implement this issue, build this issue, work on issue 03, implement it, build this ticket."
 user-invocable: true
-argument-hint: "[path to issue file]"
+argument-hint: "[path to a briefing]"
 ---
 
 # Impl
 
-Build the work described in one issue file. One test, then the code that passes it, then the next test. When the work is done, hand it to `cr`.
+Build the work described in a briefing — an issue file, a spec, a paragraph in chat. One test, then the code that passes it, then the next test. When it's done, hand it to `cr`.
 
-You build. You do not decide what to build — the issue settled that. You do not clean up your own diff, and you do not commit. See [Never commit](#never-commit).
+You build. You do not decide what to build — the briefing settled that. You do not commit. See [Never commit](#never-commit).
 
 ---
 
 ## Core rules
 
-1. **The issue is the source of truth.** Don't re-open decisions it already made. Don't add what it didn't ask for.
+1. **The briefing is the source of truth,** whatever shape it arrived in. Don't re-open decisions it made. Don't add what it didn't ask for.
 2. **Test first.** One failing test, then the smallest code that passes it. Never the other way round.
-3. **Ask only when blocked.** Four things stop the run — see [Stopping](#stopping). Everything else you decide, do, and report.
-4. **Write the minimum.** Cleaning up is `cr`'s job, not yours.
-5. **Never commit and never stage.** The user reviews the tree and decides.
+3. **The repo's standards beat your habits.** Every time.
+4. **Write the minimum,** and don't clean up as you go.
+5. **You don't review your own diff.** `cr` does, and you apply what it finds.
+6. **Never commit and never stage.** The user reviews the tree and decides.
 
 ---
 
-## Input
+## Reading the briefing
 
-| Given | Use |
-|---|---|
-| `/impl issues/03-thing.md` | That issue. |
-| `/impl`, work described earlier in the session | That work, with the note below. |
-| `/impl path/to/spec.md` | The first work item in it, with the note below. |
-| `/impl`, nothing anywhere | Ask what to build. |
+A path: read it. No path: the work described earlier in the session. Nothing anywhere: ask what to build.
 
-### When it isn't an issue
+**No required headings, ever.** Read what you were handed for three things, wherever they sit and whatever they're called:
 
-An issue file carries `Done when`, `Tests`, and the decisions that bind the work. A spec or a plain sentence carries none of that.
+- **The outcomes** — what's true once this is done.
+- **The cases** — what to test, and the input or boundary that makes each one bite.
+- **The constraints** — decisions and conventions the work has to honour.
 
-Say so once — *"this isn't an issue file, so there's no `Done when` or `Tests`; working from what's here"* — and then run normally. Don't invent acceptance criteria to fill the gap. That is what `probe`, `spec` and `issues` are for, and inventing them here produces a report that claims outcomes nobody agreed to.
+A briefing that states none of them still gets built. Derive what's missing from what's there, say in one line what you derived, and carry on.
+
+**Derive, never invent.** Reading *"replaying a delivered row is rejected"* out of a stated rule is deriving. Adding pagination nobody mentioned is scope.
 
 ---
 
-## Before you write
+## Standards
 
-Four things, in this order:
+Four things before you write, in this order:
 
-1. **The repo's standards.** `CLAUDE.md`, `AGENTS.md`, `CONTRIBUTING.md`, `CODING_STANDARDS.md` — whatever documents how code here is written. `cr` reads the same files afterwards, so anything you skip comes back as a finding.
-2. **Nearby code of the same kind.** The issue's `Conventions to follow` says what to match; read the code to learn how it's actually done — layout, naming, how tests are written and where they live.
-3. **How this repo verifies.** See [Verifying](#verifying).
-4. **The working tree.** Run `git status`. If it is already dirty, say so in one line and keep the list. Those files are not yours, you don't touch them, and the final report names them separately.
+1. **The repo's standards docs.** `CLAUDE.md`, `AGENTS.md`, `CONTRIBUTING.md`, `CODING_STANDARDS.md` — whatever documents how code here is written.
+2. **Nearby code of the same kind.** Whatever the briefing says to match tells you where to look; the code tells you how it's actually done — layout, naming, how tests are written and where they live.
+3. **How this repo verifies.** The CI config first — it already says which commands run for which paths. Then Makefiles and package scripts near what you're changing. **If you can't find them, ask.** A guessed test command that passes because it ran nothing is worse than no test command.
+4. **The working tree.** Run `git status`. If it's already dirty, keep the list — those files are not yours, you don't touch them, and you name them separately at the end.
 
-Don't survey the whole codebase. Read what the issue touches.
+Don't survey the whole codebase. Read what the work touches.
 
 ---
 
 ## The loop
 
-One slice at a time. A slice is one test and the code that makes it pass.
+A slice is one test and the code that makes it pass.
 
 1. Write one test. Run it. **It must fail.**
 2. Write the smallest code that makes it pass. Nothing more.
-3. Run the fast check (see [Verifying](#verifying)).
+3. Run that test file, plus typecheck or compile.
 4. Next slice.
+
+Once at the end: the full suite, plus lint.
 
 Rules that bind every slice:
 
 - **Red before green.** A test that passes the moment you write it proves nothing. Treat it as broken and fix the test before you write any code.
-- **One test at a time.** Never write all the tests up front. Tests written in bulk describe behaviour you imagined rather than behaviour you built, they stop reacting to what the last slice taught you, and they lock in a structure you chose before understanding the work.
-- **The minimum to pass.** No speculative options, no hooks for a future the issue didn't ask for.
-- **No cleanup.** Don't refactor or rename as you go. `cr` reviews the diff and that is where cleanup is decided. Duplication is the exception: leave the copies alone. `cr` won't ask you to extract them, and the wrong abstraction costs more than the copy.
+- **One test at a time.** Tests written in bulk describe behaviour you imagined rather than behaviour you built, and they lock in a structure you chose before understanding the work.
+- **The minimum to pass.** No speculative options, no hooks for a future nobody asked for.
+- **No cleanup.** Don't refactor or rename as you go. Duplication included — leave the copies alone, because the wrong abstraction costs more than the copy.
+- **Five failed attempts at the same test means stop and ask.** The next move is usually weakening or deleting the test. Don't.
+- **A final suite failure in code you didn't touch means stop and say so.** Pre-existing breakage is not yours to fix or to hide, and the work isn't done over a red suite.
 
-### What to test
+---
 
-Take the cases from the issue's `Tests` section.
+## Testing
 
-If the issue has no `Tests` section, derive the cases from `Done when`, state them in one line, and carry on.
+Take the cases the briefing names, with whatever input or boundary it gives for each. Where it names none, derive them from the outcomes it states, say in one line what you derived, and carry on.
 
-### What a good test looks like
+Follow the repo's own testing conventions first — its framework, its layout, its style. Where it has none:
 
-**Integration over unit.** Test through the real interface a caller uses, with the real code behind it. A test that exercises the actual path is the one that tells you the feature works; a pile of unit tests that replace everything the code calls with a fake only tells you the fakes agree with each other.
+- **Integration over unit.** Test through the real interface a caller uses, with the real code behind it. A pile of unit tests that replace everything the code calls with a fake only tells you the fakes agree with each other.
+- **Unit tests only for logic worth stressing on its own** — complex parsing, a non-trivial calculation, boundaries a caller can't easily reach from outside.
 
-**Unit tests only for logic worth stressing on its own** — complex parsing, a non-trivial calculation, boundaries and error paths a caller can't easily reach from outside. Isolating that logic lets you hit it hard. Everything else is covered better from the outside.
+A good test:
 
-Follow the repo's own testing conventions first. Where it has none, this is the default.
-
-Either way, a good test:
-
-- **Goes through the public interface.** The code behind it can change completely and the test should still pass.
+- **Goes through the public interface.** The code behind it can change completely and the test still passes.
 - **Names behaviour, not mechanics.** *"user can check out with a valid cart"*, not *"checkout calls processPayment"*.
-- **Takes its expected value from somewhere independent** — a known-good literal, a worked example, the issue. Not a value the test works out by repeating the logic the code uses.
-- **Keeps assertions that belong together in the same test.** One behaviour per test, with as many assertions as that behaviour needs — checking six fields on one response is one test, not six. What doesn't belong is a second, unrelated behaviour.
+- **Takes its expected value from somewhere independent** — a known-good literal, a worked example, the briefing. Not a value the test works out by repeating the logic the code uses.
+- **Keeps assertions that belong together in the same test.** Checking six fields on one response is one test, not six. A second, unrelated behaviour is what doesn't belong.
 
 Three ways a test goes bad:
 
 - **Tied to the implementation.** It fakes out your own code, reaches into private functions, or checks the result through a side channel — reading the database directly instead of calling the function that reads it. The tell: it breaks when you reorganise code that behaves exactly the same.
-- **Expecting a value the test computed the same way the code does.** Both copies share the same mistake, so the test passes anyway. Use a known-good literal.
-- **Written in bulk, before any code.** It describes behaviour you imagined rather than behaviour you built, and it fixes the shape of the work before you understand it.
+- **Expecting a value the test computed the same way the code does.** Both copies share the same mistake, so the test passes anyway.
+- **Written in bulk, before any code.** It describes behaviour you imagined, and it fixes the shape of the work before you understand it.
 
 ### Mocking
 
-Mock at system boundaries only:
+Mock at system boundaries only: external APIs, time and randomness, databases and the file system when running the real thing isn't practical — and prefer real files in a temp directory where you can.
 
-- External APIs
-- Databases, only when the project's tests have no real one available or running one isn't practical
-- The file system, on the same terms — use real files in a temp directory where you can
-- Time and randomness
-
-Don't mock your own code — not the modules it calls, not anything else you control. If something you wrote is hard to test without replacing it with a fake, the interface is the problem.
+**Don't mock your own code.** If something you wrote is hard to test without replacing it with a fake, the interface is the problem.
 
 ### When there is nothing to run
 
@@ -115,112 +111,38 @@ This applies only when nothing runnable exists. If the repo has a test runner an
 
 ---
 
-## Verifying
-
-**Find the commands before you start.** Look at the CI config first — it already says which commands run for which paths. Then Makefiles and package scripts near the files you're changing.
-
-**If you can't find them, or you're not sure which apply, ask.** A guessed test command that passes because it ran nothing is worse than no test command.
-
-| When | Run |
-|---|---|
-| Every slice | The single test file, plus typecheck or compile |
-| Once at the end | The full suite, plus lint |
-
-If the final suite fails on something you didn't touch, stop and report it. Don't fix unrelated code, and don't call the work done over a red suite.
-
----
-
 ## Review
 
-When the work is done and verified, hand it to `cr`.
+When the work is done and the suite is green, hand it to `cr`.
 
-**Send it to a sub-agent and wait.** Pass the path to the issue file. `cr` works out its own diff — you don't build one or describe your changes. The sub-agent keeps the review's reading out of this context.
+**Send it to a sub-agent and wait.** Pass the path to the briefing, when it is a file. `cr` works out its own diff — you don't build one or describe your changes. The sub-agent keeps the review's reading out of this context.
 
-**What comes back is a report**, nothing else: three axes — Standards, Spec, Correctness — each finding one or two lines carrying the file, the claim, the suggested fix, and a marking. Standards and Spec mark **hard** or **judgement**; Correctness marks **certain**, **likely** or **speculative**.
+**What comes back is a report**: three axes — Standards, Spec, Correctness — each finding one or two lines carrying the file, the claim, the suggested fix, and a marking.
 
 Then:
 
 1. Apply the findings you agree with.
 2. Re-run the full suite and lint.
-3. **Report it under `cr`'s axis headings, demoted to `###`.** Keep `cr`'s `Reviewed …` and `Excluded: …` lines above them, as written — the excluded files are part of what the review didn't cover. All three axis headings appear, every time.
+3. Report what's left under `cr`'s axis headings, keeping its `Reviewed …` and `Excluded: …` lines above them as written — the excluded files are part of what the review didn't cover.
 
-Every finding lands in one of three buckets:
+**Only what you didn't apply reaches the user.** Every finding lands in one of three buckets:
 
-- **It stands.** You didn't apply it, whatever the reason — you disagree, the issue overrode it, or you applied only part. Reproduce it verbatim, `cr`'s file and marking and claim, and add your reason. Where the issue overrode it, the quoted decision is that reason; where you applied part, what's left undone is. These are the only findings the user has to decide on, so nothing about them is shortened, reworded or moved off its own line.
-- **You applied it.** Counted, never listed. The diff already says what changed, and a roll-call of things you fixed is the noise that stops the user reading the part that matters.
-- **It needed no action.** The diff already satisfies it, so `cr` read the code wrong and there was nothing to agree or disagree with. Counted, never listed, so a misread doesn't pass for a clean bill.
+- **It stands.** You didn't apply it, whatever the reason — you disagree, the briefing overrode it, or you applied only part. Reproduce it verbatim, `cr`'s file and marking and claim, and add your reason. Where the briefing overrode it, the quoted decision is that reason; where you applied part, what's left undone is. These are the only findings the user has to decide on, so nothing about them is shortened, reworded or moved off its own line.
+- **You applied it.** Counted, never listed. The diff already says what changed.
+- **It needed no action.** The diff already satisfied it, so `cr` read the code wrong. Counted, never listed, so a misread doesn't pass for a clean bill.
+
+**Open with one count across all three axes**: `2 stand · 7 applied · 1 already satisfied`. Drop any term that's zero. No total.
 
 **Every axis gets its heading and at least one line.** Where nothing stands, that line is `Nothing stands.`; where the axis didn't run, it's `cr`'s reason. A clean axis and a skipped one must never look alike.
 
-**Open the section with one count across all three axes**, in place of `cr`'s: `2 stand · 7 applied · 1 already satisfied`. Drop any term that's zero. No total.
-
-**Drop `## Review` only when the count is empty and all three axes ran.** One already-satisfied finding keeps the section alive, and so does an axis that didn't run — a review missing a whole check is the one thing that must never read as clean.
-
-**The issue beats the review.** When a finding contradicts something under `Decisions that bind this`, dismiss it and quote the decision. `cr` reads the issue too, but a decision the team settled outranks a reviewer's read of it.
+**The briefing beats the review.** When a finding contradicts a decision the briefing states, dismiss it and quote the decision. `cr` reads the briefing too, but a decision the team settled outranks a reviewer's read of it.
 
 **If `cr` isn't installed, or the sub-agent comes back with nothing**, say the review didn't run and why. Don't review the diff yourself instead — a review by the agent that wrote the code is the thing `cr` exists to replace.
 
 ---
 
-## Stopping
-
-Four things stop the run and ask the user:
-
-| Stop | Why |
-|---|---|
-| The repo contradicts a decision that binds the issue | Carrying on means shipping against a decision the team made. |
-| Five failed attempts at the same test | The next move is usually weakening or deleting the test. Don't. |
-| The final suite fails on something you didn't touch | Pre-existing breakage is not yours to fix or to hide. |
-| You can't work out how the repo verifies | See [Verifying](#verifying). |
-
-Everything else: decide it, do it, and put it in the report.
-
----
-
-## The report
-
-```markdown
-## What I built
-<a sentence or two>
-
-## Slices
-- <test name> — <what it covers>
-
-## Done when
-- ✅ <item>
-- ❌ <item> — <why not>
-
-## Verify
-- `<command>` — <result>
-
-## Review
-<cr's `Reviewed …` and `Excluded: …` lines, verbatim>
-<n> stand · <n> applied · <n> already satisfied <omit any term that's zero>
-
-### Standards
-- <file> — <marking> — <claim, verbatim> — <why it stands>
-
-### Spec
-Nothing stands.
-
-### Correctness
-Did not run — <reason>
-
-## Files changed
-- <path>
-
-Already dirty before this run, untouched:
-- <path>
-```
-
-Omit a `##` section that has nothing in it — but never an axis heading inside `## Review`. Say plainly when something failed — a report that reads clean over a red suite is worse than no report.
-
-Nothing is committed, so the last two sections are how the user finds the work.
-
----
-
 ## Never commit
 
-No `git commit`, no `git add`, no `git add -N`, no branch. The tree is left dirty and the report names the files.
+No `git commit`, no `git add`, no `git add -N`, no branch. The tree is left dirty and you name the files you changed, plus any that were already dirty before you started — that list is how the user finds the work.
 
-The issue file is read-only. Don't tick its `Done when` items, don't append a log to it, don't move it. Nothing on disk records that an issue was implemented — that's deliberate, and it means re-running `/impl` on the same issue does the work again.
+The briefing is read-only. Don't tick items in it, don't append a log to it, don't move it. Nothing on disk records that it was implemented, so re-running `/impl` on the same briefing does the work again.
