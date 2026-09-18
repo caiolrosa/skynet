@@ -10,6 +10,10 @@
 Two tables: one row per delivery a merchant is owed, one row per attempt made against it.
 
 ```ruby
+DeliveryState = "pending" | "delivered" | "dead"
+```
+
+```ruby
 class CreateWebhookDeliveries < ActiveRecord::Migration[7.1]
   def change
     create_table :webhook_deliveries do |t|
@@ -17,7 +21,7 @@ class CreateWebhookDeliveries < ActiveRecord::Migration[7.1]
       t.string   :event_type, null: false
       t.string   :endpoint_url, null: false
       t.jsonb    :payload, null: false
-      t.string   :state, null: false, default: "pending"
+      t.string   :state, null: false, default: "pending"  # DeliveryState
       t.integer  :attempt_count, null: false, default: 0
       t.datetime :next_attempt_at, null: false
       t.timestamps
@@ -38,9 +42,11 @@ end
 
 ## Constraints
 
+- **`DeliveryState` is enforced in the model, not the database.** The set changes more often than a migration is worth.
 - **The payload column holds the body as it was at publish time.** No foreign keys into it, no recomputing it on read.
 - **`[state, next_attempt_at]` is the claim index.** The worker selects on both together; a single-column index doesn't serve it.
 - **`http_status` and `error` are both nullable.** A timeout has neither a status nor a response, and it is still an attempt.
+- **Attempts are append-only, and `number` is never reused.** A replay continues the numbering rather than restarting it, so the history survives.
 - **Migrations are reversible and run in one file,** as every migration in this repo does.
 
 ## Done when
