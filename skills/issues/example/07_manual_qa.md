@@ -13,19 +13,22 @@ Run these by hand against a deployed environment, in order. Each one says what t
 
 ## Constraints
 
-- **Run against a merchant account with two endpoints configured,** one healthy and one pointed at a server you control.
+- **Run against a merchant account with two endpoints subscribed,** one healthy and one pointed at a server you control.
 - **These checks are the natural seed for an end-to-end suite.** Whoever automates them later starts here.
 
 ## Done when
 
 - Publishing an event to an endpoint that returns 200 shows as delivered with one attempt.
 - Pointing an endpoint at a server returning 500 shows attempts accumulating on the 1m, 5m, 25m, 2h backoff schedule.
+- Killing the endpoint mid-request so it times out records the attempt with the error and no status, and the worker keeps running.
 - A delivery reaching its sixth failure shows as dead, and one alert fires naming the merchant and the endpoint.
-- Taking a second endpoint for the same merchant to dead within the hour fires no second alert.
-- Replaying the dead delivery against a now-healthy endpoint delivers it, and the replayed send appears in the attempt history.
+- Taking a second delivery for the same endpoint to dead within the hour fires no second alert, and it still shows as dead.
+- Replaying the dead delivery against a now-healthy endpoint delivers it, the attempt numbers continue rather than restart, and `attempt_count` shows 1.
+- Replaying the same delivery again is refused.
+- Filtering by state in the UI issues a new request rather than filtering the rows already on screen.
 - A delivered delivery has no replay button.
-- Logging in as a different merchant shows none of the above deliveries.
-- Publishing an event for a merchant with no configured endpoint succeeds, with no delivery row and no error.
+- Logging in as a different merchant shows none of the above deliveries, and fetching one by id is refused as unknown.
+- Publishing an event for a merchant with no subscribed endpoint succeeds, with no delivery row and no error.
 
 ## Out of scope
 
