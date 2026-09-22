@@ -4,45 +4,29 @@ on:
   push:
     branches: [master]
   pull_request:
-  workflow_call:
-    inputs:
-      force_project:
-        required: false
-        type: string
-        description: "Force verification for a specific project"
 
 jobs:
   changes:
     runs-on: ubuntu-latest
     outputs:
-      caged: ${{ steps.filter.outputs.caged }}
+      warden: ${{ steps.filter.outputs.warden }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
         id: filter
         with:
           filters: |
-            caged:
-              - 'caged/**'
+            warden:
+              - 'warden/**'
               - '.github/workflows/**'
 
-  verify-caged:
+  verify-warden:
     needs: changes
-    if: ${{ needs.changes.outputs.caged == 'true' || inputs.force_project == 'caged' || inputs.force_project == 'all' }}
+    if: ${{ needs.changes.outputs.warden == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy, rustfmt
-
-      - name: Lint
-        working-directory: caged
-        run: make lint
-
-      - name: Test
-        working-directory: caged
-        run: make test
+      - name: ShellCheck
+        run: shellcheck warden/warden
