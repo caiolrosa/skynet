@@ -55,3 +55,4 @@ argument-hint: "[description or the path to a plan]"
 - Summarize to the user what you implemented, keep it short and direct.
 - Point out relevant information: abstractions created, performance and architecture considerations you encountered while building
 - Offer the user to commit the work or call the code review skill `/cr`
+- If calling the skill `/cr` give it the path to the plan or the context of the changes as well as which changes to review (current branch or from which commit to start reviewing)
